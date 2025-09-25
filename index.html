@@ -1,70 +1,128 @@
 <!doctype html>
 <html lang="pl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Plan zajęć – parser z podziałem</title>
-  <style>
-    :root{--gap:14px}
-    body{font-family:sans-serif;margin:20px;background:#f7f7f8;color:#111}
-    .topbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    input[type="text"]{flex:1;min-width:260px;padding:6px 8px;border:1px solid #ccc;border-radius:8px}
-    button{padding:6px 12px;border:0;border-radius:8px;background:#4f46e5;color:#fff;cursor:pointer}
-    .muted{color:#666;font-size:12px;margin:10px 0}
-    .grid{display:grid;gap:var(--gap)}
-    /* 3 kolumny na desktopie, 1 na mobile */
-    @media (min-width: 980px){ .grid{grid-template-columns: 1fr 1fr 1fr;} }
-    @media (max-width: 979px){ .grid{grid-template-columns: 1fr;} }
-    .col{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:12px;min-height:80px}
-    .col h2{font-size:16px;margin:0 0 8px}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px;margin:8px 0}
-    .row{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:6px;margin:4px 0;font-size:14px}
-    details>summary{cursor:pointer;list-style:none;display:flex;gap:6px;align-items:center}
-    summary::-webkit-details-marker{display:none}
-    .pill{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:9999px;padding:2px 6px;font-size:12px;margin-left:6px}
-    .col .empty{color:#777;font-size:13px}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Plan zajęć – wybór i plan</title>
+<style>
+  :root{
+    --gap:14px; --bg:#f7f7f8; --card:#fff; --bd:#e5e7eb; --muted:#6b7280;
+    --accent:#4f46e5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#111}
+  header{padding:16px 20px;border-bottom:1px solid var(--bd);background:#fff;position:sticky;top:0;z-index:2}
+  h1{font-size:18px;margin:0}
+  .container{display:grid;grid-template-columns:340px 1fr;gap:var(--gap);padding:16px 20px}
+  @media (max-width:1024px){ .container{grid-template-columns:1fr} }
+
+  /* Lewy panel */
+  .left{display:flex;flex-direction:column;gap:var(--gap)}
+  .parsebar{display:flex;gap:8px;align-items:center}
+  .parsebar input[type=text]{flex:1;min-width:200px;padding:6px 8px;border:1px solid #ccc;border-radius:8px;background:#fff}
+  .parsebar button{padding:6px 12px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+  .muted{color:var(--muted);font-size:12px}
+  details.block{background:#fff;border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+  details.block>summary{user-select:none;cursor:pointer;list-style:none;padding:10px 12px;display:flex;align-items:center;gap:10px;background:#fff}
+  details.block>summary::-webkit-details-marker{display:none}
+  .caret{display:inline-block;transition:transform .2s ease}
+  details[open] .caret{transform:rotate(90deg)}
+  .section-body{padding:10px 12px 12px;background:#fff;border-top:1px solid var(--bd)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:640px){ .grid2{grid-template-columns:1fr} }
+  .course{border:1px solid var(--bd);border-radius:10px;background:var(--card);padding:8px}
+  .course h3{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:6px}
+  .tags{font-size:11px;color:#374151}
+  .group{background:#f9fafb;border:1px solid var(--bd);border-radius:8px;padding:6px;margin:6px 0;font-size:13px}
+  .group legend{font-weight:600;font-size:12px}
+  .opt{display:flex;align-items:center;gap:8px;margin:4px 0}
+  .opt label{display:flex;flex-wrap:wrap;gap:6px;cursor:pointer}
+  .opt small{color:var(--muted)}
+  .chip{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:9999px;padding:2px 8px;font-size:11px}
+
+  /* Prawy panel – plan */
+  .right{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px}
+  .right h2{margin:0 0 8px;font-size:16px}
+  .plan{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  @media (max-width:900px){ .plan{grid-template-columns:1fr} }
+  .day{border:1px solid var(--bd);border-radius:10px;padding:8px;background:#fafafa}
+  .day h4{margin:0 0 6px;font-size:14px}
+  .slot{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:6px;margin:6px 0}
+  .slot .head{display:flex;justify-content:space-between;gap:8px}
+  .slot .meta{font-size:12px;color:#374151}
+  .slot button{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:12px}
+</style>
 </head>
 <body>
-  <h1>Plan zajęć – parser z podziałem</h1>
+  <header>
+    <h1>Plan zajęć – wybierz kursy i grupy → po prawej tworzy się plan</h1>
+  </header>
 
-  <div class="topbar">
-    <input id="src" type="text" placeholder="Wklej tu fragment HTML (np. &lt;tr&gt;...&lt;/tr&gt;)" />
-    <button id="parseBtn">Parsuj</button>
-  </div>
+  <div class="container">
+    <!-- LEWA STRONA -->
+    <section class="left">
+      <div class="parsebar">
+        <input id="src" type="text" placeholder="Wklej fragment HTML (np. &lt;tr&gt;...&lt;/tr&gt;)" />
+        <button id="parseBtn">Parsuj</button>
+      </div>
+      <div id="status" class="muted">Gotowe do parsowania.</div>
 
-  <div id="status" class="muted">Gotowe do parsowania.</div>
+      <!-- Kolapsowalne sekcje -->
+      <details class="block" open>
+        <summary><span class="caret">▶</span><strong>Przedmioty obowiązkowe (O)</strong> <span class="muted" id="countO"></span></summary>
+        <div class="section-body">
+          <div id="col-O" class="grid2"></div>
+        </div>
+      </details>
 
-  <div class="grid">
-    <section id="col-O" class="col">
-      <h2>Przedmioty obowiązkowe (O)</h2>
-      <div class="list"></div>
+      <details class="block" open>
+        <summary><span class="caret">▶</span><strong>Zaawansowane do wyboru (M)</strong> <span class="muted" id="countM"></span></summary>
+        <div class="section-body">
+          <div id="col-M" class="grid2"></div>
+        </div>
+      </details>
+
+      <details class="block" open>
+        <summary><span class="caret">▶</span><strong>Pozostałe</strong> <span class="muted" id="countR"></span></summary>
+        <div class="section-body">
+          <div id="col-REST" class="grid2"></div>
+        </div>
+      </details>
     </section>
-    <section id="col-M" class="col">
-      <h2>Zaawansowane przedmioty do wyboru (M)</h2>
-      <div class="list"></div>
-    </section>
-    <section id="col-REST" class="col">
-      <h2>Pozostałe</h2>
-      <div class="list"></div>
+
+    <!-- PRAWA STRONA -->
+    <section class="right">
+      <h2>Plan zajęć</h2>
+      <div id="plan" class="plan"></div>
     </section>
   </div>
 
 <script>
-const srcEl   = document.getElementById('src');
-const statusEl= document.getElementById('status');
+/* ---------- Utils ---------- */
+const DAYS_ORDER = ['poniedziałek','wtorek','środa','czwartek','piątek'];
+const PLAN_DAYS = DAYS_ORDER.map(d => d); // można rozszerzyć o sobotę/niedzielę
+const norm = s => (s||'').replace(/\s+/g,' ').replace(/—/g,'-').trim();
 
-function norm(s){ return (s||'').replace(/\s+/g,' ').replace(/—/g,'-').trim(); }
 function htmlToText(node){
-  const d = document.createElement('div');
-  d.innerHTML = node?.innerHTML || '';
+  const d = document.createElement('div'); d.innerHTML = node?.innerHTML || '';
   d.querySelectorAll('a').forEach(a => a.outerHTML = `${a.textContent}${a.href ? ` (${a.href})` : ''}`);
   return norm(d.textContent);
 }
+function timeToMinutes(t){
+  // formy: "8.15 - 10.0" / "8:15 - 10:00" / "8.15 — 10.0"
+  if(!t) return null;
+  const s = t.replace(/[—–]/g,'-').replace(/\s+/g,'').replace(/:/g,'.');
+  const m = s.match(/^(\d{1,2}\.\d{1,2}|\d{1,2})-(\d{1,2}\.\d{1,2}|\d{1,2})$/);
+  function toMin(x){
+    const [h,mm] = x.split('.'); const H = +h, M = mm!=null ? +mm : 0;
+    return H*60 + M;
+  }
+  if(m){ return { start: toMin(m[1]), end: toMin(m[2]) }; }
+  return null;
+}
 
-/** Zwraca obiekt: { name, link, entries:[], sectionLabel } */
+/* ---------- Parsing ---------- */
 function parsePlan(html){
-  // jeśli wklejone są same <tr>, owińmy w <table>
   const wrapped = /<tr[\s>]/i.test(html) && !/<table[\s>]/i.test(html) ? `<table>${html}</table>` : html;
   const dom = new DOMParser().parseFromString(wrapped,'text/html');
   const rows = Array.from(dom.querySelectorAll('tr'));
@@ -76,26 +134,14 @@ function parsePlan(html){
     const anchor = tr.querySelector('td[colspan="8"] > a');
 
     if(isHeader){
-      // zapamiętaj aktualną sekcję (np. „Przedmioty obowiązkowe (O)”)
-      const label = norm(tr.textContent);
-      if(label) section = label;
+      const label = norm(tr.textContent); if(label) section = label;
       continue;
     }
-
     if(anchor){
-      // nowy przedmiot
-      current = {
-        name: norm(anchor.textContent),
-        link: anchor.getAttribute('href') || '',
-        sectionLabel: section || '',
-        entries: []
-      };
-      courses.push(current);
-      continue;
+      current = { name:norm(anchor.textContent), link:anchor.getAttribute('href')||'', sectionLabel:section||'', entries:[] };
+      courses.push(current); continue;
     }
-
-    const tds = tr.querySelectorAll('td');
-    if(!tds.length) continue;
+    const tds = tr.querySelectorAll('td'); if(!tds.length) continue;
 
     const group   = norm(tds[0]?.textContent);
     const type    = norm(tds[1]?.textContent);
@@ -107,93 +153,230 @@ function parsePlan(html){
     const uw2     = tds[7] ? htmlToText(tds[7]) : '';
     const empty   = [group,type,teacher,day,time,room,uw1,uw2].every(v=>v===''||v==='.');
     if(empty) continue;
-
-    if(!current){
-      current = { name:'Inne', link:'', sectionLabel: section || '', entries:[] };
-      courses.push(current);
-    }
-
-    current.entries.push({
-      group, type, teacher, day, time, room,
-      uwagi: [uw1,uw2].filter(Boolean).join(' | ')
-    });
+    if(!current){ current={name:'Inne', link:'', sectionLabel:section||'', entries:[]}; courses.push(current); }
+    current.entries.push({group,type,teacher,day,time,room,uwagi:[uw1,uw2].filter(Boolean).join(' | ')});
   }
   return courses;
 }
 
-/** Mapowanie sekcji na kolumny: O / M / REST */
+/* ---------- Kategoryzacja ---------- */
 function sectionToColumn(label){
   const L = (label||'').toLowerCase();
   if (/\(o\)/i.test(label) || L.includes('obowiązkowe')) return 'O';
   if (/\(m\)/i.test(label) || L.includes('zaawansowane')) return 'M';
   return 'REST';
 }
+function typeBucket(t){
+  const v = (t||'').toLowerCase();
+  if (v.startsWith('wyk')) return 'wykład';
+  if (v.startsWith('konw')) return 'konwersatorium';
+  if (v.startsWith('cw')) return 'ćwiczenia';
+  if (v.startsWith('lab')) return 'laboratorium';
+  if (v.startsWith('sem')) return 'seminarium';
+  return 'inne';
+}
 
-function renderColumn(containerId, courses){
-  const root = document.querySelector(`#${containerId} .list`);
-  root.innerHTML = '';
-  if(!courses.length){
-    root.innerHTML = '<div class="empty">Brak przedmiotów w tej kategorii.</div>';
-    return;
+/* ---------- Render: lewa kolumna ---------- */
+const countsEl = { O: document.getElementById('countO'), M: document.getElementById('countM'), REST: document.getElementById('countR') };
+function renderCourseCard(container, course, onSelect){
+  const byBucket = {};
+  for(const e of course.entries){
+    const b = typeBucket(e.type);
+    (byBucket[b] ||= []).push(e);
   }
+  const el = document.createElement('div');
+  el.className = 'course';
+  const tagText = Object.entries(byBucket).map(([k,v])=>`${k}: ${v.length}`).join(' · ');
+  const courseId = btoa(encodeURIComponent(course.name)).replace(/=/g,'').slice(0,12);
 
-  for(const c of courses){
-    const details=document.createElement('details');
-    details.className='card';
-    const counts=c.entries.reduce((a,e)=>{a[e.type||'inne']=(a[e.type||'inne']||0)+1;return a;},{});
-    details.innerHTML=`
-      <summary>
-        <input type="checkbox" />
-        <div><strong>${c.name}</strong>
-          <span class="pill">${Object.entries(counts).map(([t,n])=>`${t}: ${n}`).join(' · ')}</span>
-          ${c.link?`<div class="muted"><a href="${c.link}" target="_blank">USOS</a></div>`:''}
-        </div>
-      </summary>
-      <div style="margin-top:6px">
-        ${c.entries.map(e=>`
-          <div class="row">
-            <div><strong>${e.type||'—'}</strong>${e.group?` · gr. ${e.group}`:''}</div>
-            <div>${[e.teacher,e.day,e.time,e.room&&('s. '+e.room)].filter(Boolean).join(' · ')}</div>
-            ${e.uwagi?`<div class="muted">${e.uwagi}</div>`:''}
+  el.innerHTML = `
+    <h3><span>${course.name}</span></h3>
+    <div class="tags"><span class="chip">${tagText}</span> ${course.link?` · <a href="${course.link}" target="_blank">USOS</a>`:''}</div>
+    ${Object.keys(byBucket).map(bucket=>{
+      const options = byBucket[bucket];
+      const groupName = `${courseId}_${bucket}`;
+      return `
+        <fieldset class="group">
+          <legend>${bucket}</legend>
+          ${options.map((opt,idx)=>{
+            const id = `${groupName}_${idx}`;
+            const labelBits = [opt.teacher, opt.day, opt.time, opt.room && ('s. '+opt.room), opt.group && ('gr. '+opt.group)]
+              .filter(Boolean).join(' · ');
+            const meta = opt.uwagi ? ` <small>(${opt.uwagi})</small>` : '';
+            return `
+              <div class="opt">
+                <input type="radio" name="${groupName}" id="${id}" />
+                <label for="${id}">
+                  <strong>${labelBits}</strong>${meta}
+                </label>
+              </div>
+            `;
+          }).join('')}
+          <div class="opt">
+            <input type="radio" name="${groupName}" id="${groupName}_none" />
+            <label for="${groupName}_none"><em>brak wyboru</em></label>
           </div>
-        `).join('')}
-      </div>
-    `;
-    // Checkbox = otwieranie/zamykanie (bez zapisywania stanu)
-    const cb = details.querySelector('input[type="checkbox"]');
-    cb.addEventListener('change', () => { details.open = cb.checked; });
-    details.addEventListener('toggle', () => { cb.checked = details.open; });
+        </fieldset>
+      `;
+    }).join('')}
+  `;
+  // zdarzenia wyboru
+  el.querySelectorAll('input[type=radio]').forEach(input=>{
+    input.addEventListener('change', ()=>{
+      const sel = {};
+      el.querySelectorAll('fieldset.group').forEach(fs=>{
+        const legend = fs.querySelector('legend')?.textContent || '';
+        const checked = fs.querySelector('input[type=radio]:checked');
+        if(checked && !checked.id.endsWith('_none')){
+          const label = checked.nextElementSibling?.querySelector('strong')?.textContent || '';
+          // znajdź obiekt entries odpowiadający etykiecie (przybliżenie – dopasowanie po teacher+day+time)
+          const bucket = legend;
+          const list = byBucket[bucket] || [];
+          const found = list.find(e => label.includes(e.teacher) && label.includes(e.day) && label.includes(e.time));
+          if(found) sel[bucket] = found;
+        }
+      });
+      onSelect(course, sel);
+    });
+  });
 
-    root.appendChild(details);
+  container.appendChild(el);
+}
+
+function renderLeftColumns(courses, onSelect){
+  const buckets = { O:[], M:[], REST:[] };
+  for(const c of courses){ buckets[sectionToColumn(c.sectionLabel)].push(c); }
+  countsEl.O.textContent = `(${buckets.O.length})`;
+  countsEl.M.textContent = `(${buckets.M.length})`;
+  countsEl.REST.textContent = `(${buckets.REST.length})`;
+
+  for(const key of ['O','M','REST']){
+    const root = document.getElementById('col-'+key);
+    root.innerHTML = '';
+    buckets[key].forEach(c => renderCourseCard(root, c, handleSelectionChange));
   }
 }
 
-function renderAll(courses){
-  const byCol = { O:[], M:[], REST:[] };
-  for(const c of courses){
-    byCol[sectionToColumn(c.sectionLabel)].push(c);
-  }
-  renderColumn('col-O', byCol.O);
-  renderColumn('col-M', byCol.M);
-  renderColumn('col-REST', byCol.REST);
+/* ---------- Plan (prawa strona) ---------- */
+const planEl = document.getElementById('plan');
+// pamiętamy wybory użytkownika: Map courseName -> { bucket -> entry }
+const selections = new Map();
+
+function handleSelectionChange(course, selectedBuckets){
+  // zaktualizuj zaznaczenia dla kursu
+  const prev = selections.get(course.name) || {};
+  // nadpisz tylko kategorie obecne w selectedBuckets i usuń te, które odznaczono
+  const next = { ...prev };
+  // najpierw usuń wszystko dla kursu
+  for(const k of Object.keys(next)) delete next[k];
+  // i wstaw aktualne wybory
+  for(const [k,v] of Object.entries(selectedBuckets)) next[k] = v;
+  if(Object.keys(next).length === 0) selections.delete(course.name);
+  else selections.set(course.name, next);
+  renderPlan();
 }
 
-document.getElementById('parseBtn').onclick = () => {
-  try{
-    const html = srcEl.value || '';
-    const courses = parsePlan(html);
-    renderAll(courses);
-    statusEl.textContent = `Parsowanie OK. Kursów: ${courses.length}`;
-  }catch(e){
-    console.error(e);
-    statusEl.textContent = 'Błąd parsowania.';
-    // wyczyść kolumny
-    ['col-O','col-M','col-REST'].forEach(id=>{
-      const root = document.querySelector(`#${id} .list`);
-      if(root) root.innerHTML = '';
+function renderPlan(){
+  // Zbuduj listę slotów z selections
+  const items = [];
+  selections.forEach((byBucket, courseName)=>{
+    for(const [bucket, e] of Object.entries(byBucket)){
+      const t = timeToMinutes(e.time) || { start:null, end:null };
+      items.push({
+        course: courseName,
+        bucket,
+        teacher: e.teacher, day: e.day, time: e.time, room: e.room, group: e.group, uwagi: e.uwagi,
+        start: t.start, end: t.end
+      });
+    }
+  });
+
+  // Podziel na dni i posortuj po czasie
+  const byDay = {};
+  PLAN_DAYS.forEach(d => byDay[d] = []);
+  items.forEach(it => {
+    const d = (it.day || '').toLowerCase();
+    const key = PLAN_DAYS.find(x => x.toLowerCase() === d) || PLAN_DAYS[0];
+    byDay[key].push(it);
+  });
+  for(const d of PLAN_DAYS){
+    byDay[d].sort((a,b)=>{
+      if(a.start==null && b.start==null) return 0;
+      if(a.start==null) return 1;
+      if(b.start==null) return -1;
+      return a.start - b.start;
     });
   }
+
+  // Render
+  planEl.innerHTML = '';
+  for(const d of PLAN_DAYS){
+    const col = document.createElement('div'); col.className = 'day';
+    col.innerHTML = `<h4>${d[0].toUpperCase()+d.slice(1)}</h4>`;
+    if(byDay[d].length===0){
+      col.innerHTML += `<div class="muted">Brak wybranych zajęć</div>`;
+    } else {
+      byDay[d].forEach((it, idx)=>{
+        const id = `${it.course}__${it.bucket}__${idx}`;
+        const meta = [it.teacher, it.room && ('s. '+it.room), it.group && ('gr. '+it.group)].filter(Boolean).join(' · ');
+        const warn = detectConflicts(it, byDay[d]) ? ' ⚠️' : '';
+        const slot = document.createElement('div'); slot.className='slot';
+        slot.innerHTML = `
+          <div class="head">
+            <strong>${it.time || '—'} – ${it.course}</strong>
+            <span class="muted">${it.bucket}${warn}</span>
+          </div>
+          <div class="meta">${meta}${it.uwagi ? ' · '+it.uwagi : ''}</div>
+          <div style="margin-top:4px"><button data-remove="${id}">Usuń z planu</button></div>
+        `;
+        // "Usuń" po prostu odznacza odpowiednie radio po lewej (szukamy po tekście)
+        slot.querySelector('button')?.addEventListener('click', ()=>{
+          // odszukanie grupy po lewej nie jest trywialne bez id, więc po prostu
+          // usuwamy ten wybór z selections i rerenderujemy
+          const cur = selections.get(it.course) || {};
+          Object.keys(cur).forEach(k=>{
+            if(cur[k]===it) delete cur[k];
+          });
+          // usuń kategorię odpowiadającą it.bucket
+          delete cur[it.bucket];
+          if(Object.keys(cur).length===0) selections.delete(it.course);
+          else selections.set(it.course, cur);
+          renderPlan();
+        });
+        col.appendChild(slot);
+      });
+    }
+    planEl.appendChild(col);
+  }
+}
+
+function detectConflicts(item, list){
+  if(item.start==null || item.end==null) return false;
+  return list.some(other=>{
+    if(other===item) return false;
+    if(other.start==null || other.end==null) return false;
+    // nakładanie się przedziałów czasowych
+    return Math.max(item.start, other.start) < Math.min(item.end, other.end);
+  });
+}
+
+/* ---------- Hooki UI ---------- */
+document.getElementById('parseBtn').onclick = ()=>{
+  try{
+    const html = document.getElementById('src').value || '';
+    const courses = parsePlan(html);
+    renderLeftColumns(courses, handleSelectionChange);
+    document.getElementById('status').textContent = `Parsowanie OK. Kursów: ${courses.length}`;
+    // wyczyść plan
+    selections.clear(); renderPlan();
+  }catch(e){
+    console.error(e);
+    document.getElementById('status').textContent = 'Błąd parsowania.';
+  }
 };
+
+// Inicjalny „pusty” plan
+renderPlan();
 </script>
 </body>
 </html>
