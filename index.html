@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Plan zajęć – wklej i parsuj</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:20px;background:#f7f7f8;color:#111}
+    textarea{width:100%;min-height:200px;padding:10px;border:1px solid #d1d5db;border-radius:10px;background:#fff}
+    button{padding:8px 12px;border:0;border-radius:10px;background:#4f46e5;color:#fff;cursor:pointer}
+    .row{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:8px;margin:6px 0;font-size:14px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:10px 0}
+    details>summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:center}
+    summary::-webkit-details-marker{display:none}
+    .muted{color:#6b7280;font-size:12px}
+    input[type="search"]{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:10px}
+    .pill{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:9999px;padding:2px 8px;font-size:12px;margin-left:6px}
+    .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
+  </style>
+</head>
+<body>
+  <h1>Plan zajęć – wklej i parsuj</h1>
+  <p class="muted">Wklej źródło (może być cała strona albo sam fragment z <code>&lt;tr&gt;</code>), kliknij „Parsuj”.</p>
+
+  <div class="bar">
+    <input id="q" type="search" placeholder="Szukaj: Algebra, czwartek, Wróblewski" />
+    <button id="parseBtn">Parsuj</button>
+    <button id="saveBtn" title="Zapis do przeglądarki">Zapisz w przeglądarce</button>
+    <button id="loadBtn" title="Wczytaj ostatnio zapisane">Wczytaj zapisane</button>
+    <input id="fileIn" type="file" accept=".html,.htm,.txt" />
+  </div>
+
+  <textarea id="src" placeholder="Wklej tutaj HTML..."></textarea>
+
+  <div id="status" class="muted" style="margin:10px 0">Gotowe do parsowania.</div>
+  <div id="list"></div>
+
+<script>
+const SRC_KEY = 'planZ_manual_html_v1';
+const listEl = document.getElementById('list');
+const statusEl = document.getElementById('status');
+const qEl = document.getElementById('q');
+const srcEl = document.getElementById('src');
+
+document.getElementById('saveBtn').onclick = () => {
+  localStorage.setItem(SRC_KEY, srcEl.value || '');
+  statusEl.textContent = 'Zapisano w przeglądarce.';
+};
+document.getElementById('loadBtn').onclick = () => {
+  const v = localStorage.getItem(SRC_KEY) || '';
+  srcEl.value = v;
+  statusEl.textContent = v ? 'Wczytano zapisany HTML.' : 'Brak zapisanego HTML.';
+};
+document.getElementById('fileIn').onchange = async (e) => {
+  const f = e.target.files?.[0];
+  if(!f) return;
+  const txt = await f.text();
+  srcEl.value = txt;
+  statusEl.textContent = `Załadowano plik: ${f.name}`;
+};
+
+document.getElementById('parseBtn').onclick = () => {
+  try {
+    const courses = parsePlan(srcEl.value || '');
+    window.__COURSES__ = courses;
+    statusEl.textContent = `Parsowanie OK. Przedmioty: ${courses.length}`;
+    render(courses, qEl.value);
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = 'Błąd parsowania.';
+    listEl.innerHTML = '';
+  }
+};
+
+qEl.addEventListener('input', () => render(window.__COURSES__ || [], qEl.value));
+
+const norm = s => (s||'').replace(/\s+/g,' ').replace(/—/g,'-').trim();
+function htmlToText(node){
+  const d = document.createElement('div');
+  d.innerHTML = node?.innerHTML || '';
+  d.querySelectorAll('a').forEach(a => a.outerHTML = `${a.textContent}${a.href ? ` (${a.href})` : ''}`);
+  return norm(d.textContent);
+}
+function parsePlan(html){
+  // jeśli wklejone są same <tr>, owińmy w <table>
+  const wrapped = /<tr[\s>]/i.test(html) && !/<table[\s>]/i.test(html) ? `<table>${html}</table>` : html;
+  const dom = new DOMParser().parseFromString(wrapped, 'text/html');
+  const rows = Array.from(dom.querySelectorAll('tr'));
+  const courses = []; let current = null;
+
+  for(const tr of rows){
+    const anchor = tr.querySelector('td[colspan="8"] > a');
+    const isHeader = tr.classList.contains('top');
+
+    if(anchor){
+      current = { name: norm(anchor.textContent), link: anchor.getAttribute('href') || '', entries: [] };
+      courses.push(current);
+      continue;
+    }
+    if(isHeader) continue;
+
+    const tds = tr.querySelectorAll('td');
+    if(!tds.length) continue;
+
+    const group   = norm(tds[0]?.textContent);
+    const type    = norm(tds[1]?.textContent);
+    const teacher = norm(tds[2]?.textContent);
+    const day     = norm(tds[3]?.textContent);
+    const time    = norm(tds[4]?.textContent);
+    const room    = norm(tds[5]?.textContent);
+    const uw1     = tds[6] ? htmlToText(tds[6]) : '';
+    const uw2     = tds[7] ? htmlToText(tds[7]) : '';
+
+    const empty = [group,type,teacher,day,time,room,uw1,uw2].every(v => v==='' || v==='.'); 
+    if(empty) continue;
+
+    if(!current){ current = { name:'Inne', link:'', entries:[] }; courses.push(current); }
+    current.entries.push({ group, type, teacher, day, time, room, uwagi:[uw1,uw2].filter(Boolean).join(' | ') });
+  }
+  return courses;
+}
+
+function render(courses, query=''){
+  const q = (query||'').toLowerCase().trim();
+  const filtered = q ? courses.filter(c => {
+    const hay = [c.name, c.link, ...c.entries.flatMap(e => [e.type,e.teacher,e.day,e.time,e.room,e.uwagi])]
+      .join(' ').toLowerCase();
+    return hay.includes(q);
+  }) : courses;
+
+  listEl.innerHTML = '';
+  if(!filtered.length){ listEl.textContent = 'Brak wyników.'; return; }
+
+  for(const c of filtered){
+    const id = btoa(encodeURIComponent(c.name)).replace(/=/g,'');
+    const checked = JSON.parse(localStorage.getItem('checked_'+id) || 'false');
+
+    const details = document.createElement('details');
+    if(checked) details.open = true;
+    details.className = 'card';
+
+    const counts = c.entries.reduce((a,e)=>{a[e.type||'inne']=(a[e.type||'inne']||0)+1; return a;}, {});
+    details.innerHTML = `
+      <summary>
+        <input type="checkbox" ${checked?'checked':''} />
+        <div><strong>${c.name}</strong>
+          <span class="pill">${Object.entries(counts).map(([t,n])=>`${t}: ${n}`).join(' · ')}</span>
+          ${c.link ? `<div class="muted"><a href="${c.link}" target="_blank">USOS</a></div>`:''}
+        </div>
+      </summary>
+      <div style="margin-top:8px">
+        ${c.entries.map(e=>`
+          <div class="row">
+            <div><strong>${e.type||'—'}</strong>${e.group?` · gr. ${e.group}`:''}</div>
+            <div>${[e.teacher,e.day,e.time,e.room&&('s. '+e.room)].filter(Boolean).join(' · ')}</div>
+            ${e.uwagi?`<div class="muted" style="margin-top:4px">${e.uwagi}</div>`:''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    const cb = details.querySelector('input[type="checkbox"]');
+    cb.addEventListener('change', () => {
+      localStorage.setItem('checked_'+id, cb.checked);
+      details.open = cb.checked;
+    });
+    details.addEventListener('toggle', () => {
+      const isOpen = details.open;
+      cb.checked = isOpen;
+      localStorage.setItem('checked_'+id, isOpen);
+    });
+    listEl.appendChild(details);
+  }
+}
+
+// automatycznie wczytaj ostatnio zapisane (jeśli jest)
+(function autoLoad(){
+  const v = localStorage.getItem(SRC_KEY);
+  if(v){ srcEl.value = v; document.getElementById('parseBtn').click(); }
+})();
+</script>
+</body>
+</html>
