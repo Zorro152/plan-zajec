@@ -5,378 +5,156 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Plan zajęć – wybór i plan</title>
 <style>
-  :root{
-    --gap:14px; --bg:#f7f7f8; --card:#fff; --bd:#e5e7eb; --muted:#6b7280;
-    --accent:#4f46e5;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#111}
-  header{padding:16px 20px;border-bottom:1px solid var(--bd);background:#fff;position:sticky;top:0;z-index:2}
-  h1{font-size:18px;margin:0}
-  .container{display:grid;grid-template-columns:340px 1fr;gap:var(--gap);padding:16px 20px}
-  @media (max-width:1024px){ .container{grid-template-columns:1fr} }
+  body{margin:0;font-family:sans-serif;background:#f7f7f8;color:#111}
+  header{padding:12px 16px;background:#fff;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:10}
+  h1{margin:0;font-size:18px}
+  .container{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px}
+  @media(max-width:900px){.container{grid-template-columns:1fr}}
 
-  /* Lewy panel */
-  .left{display:flex;flex-direction:column;gap:var(--gap)}
-  .parsebar{display:flex;gap:8px;align-items:center}
-  .parsebar input[type=text]{flex:1;min-width:200px;padding:6px 8px;border:1px solid #ccc;border-radius:8px;background:#fff}
-  .parsebar button{padding:6px 12px;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
-  .muted{color:var(--muted);font-size:12px}
-  details.block{background:#fff;border:1px solid var(--bd);border-radius:12px;overflow:hidden}
-  details.block>summary{user-select:none;cursor:pointer;list-style:none;padding:10px 12px;display:flex;align-items:center;gap:10px;background:#fff}
-  details.block>summary::-webkit-details-marker{display:none}
-  .caret{display:inline-block;transition:transform .2s ease}
-  details[open] .caret{transform:rotate(90deg)}
-  .section-body{padding:10px 12px 12px;background:#fff;border-top:1px solid var(--bd)}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media (max-width:640px){ .grid2{grid-template-columns:1fr} }
-  .course{border:1px solid var(--bd);border-radius:10px;background:var(--card);padding:8px}
-  .course h3{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:6px}
-  .tags{font-size:11px;color:#374151}
-  .group{background:#f9fafb;border:1px solid var(--bd);border-radius:8px;padding:6px;margin:6px 0;font-size:13px}
+  /* lewa */
+  .parsebar{display:flex;gap:6px;margin-bottom:8px}
+  .parsebar input[type=text]{flex:1;padding:6px;border:1px solid #ccc;border-radius:6px}
+  .parsebar button{padding:6px 10px;border:0;border-radius:6px;background:#4f46e5;color:#fff;cursor:pointer}
+  .search{width:100%;padding:6px;border:1px solid #ccc;border-radius:6px;margin:6px 0}
+
+  details.section{border:1px solid #ddd;border-radius:10px;background:#fff;margin:6px 0}
+  details.section>summary{cursor:pointer;list-style:none;padding:8px 10px;font-weight:600}
+  details.section>summary::-webkit-details-marker{display:none}
+  .list{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+  @media(max-width:640px){.list{grid-template-columns:1fr}}
+
+  .course{border:1px solid #ddd;border-radius:8px;background:#fafafa}
+  .course header{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;font-size:14px;cursor:pointer}
+  .course .body{display:none;padding:6px 8px}
+  .course.open .body{display:block}
+  .group{margin:4px 0}
   .group legend{font-weight:600;font-size:12px}
-  .opt{display:flex;align-items:center;gap:8px;margin:4px 0}
-  .opt label{display:flex;flex-wrap:wrap;gap:6px;cursor:pointer}
-  .opt small{color:var(--muted)}
-  .chip{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:9999px;padding:2px 8px;font-size:11px}
+  .opt{margin:3px 0;font-size:13px}
+  .opt label{cursor:pointer}
 
-  /* Prawy panel – plan */
-  .right{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px}
-  .right h2{margin:0 0 8px;font-size:16px}
-  .plan{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-  @media (max-width:900px){ .plan{grid-template-columns:1fr} }
-  .day{border:1px solid var(--bd);border-radius:10px;padding:8px;background:#fafafa}
-  .day h4{margin:0 0 6px;font-size:14px}
-  .slot{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:6px;margin:6px 0}
-  .slot .head{display:flex;justify-content:space-between;gap:8px}
-  .slot .meta{font-size:12px;color:#374151}
-  .slot button{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:12px}
+  /* prawa */
+  .plan{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  @media(max-width:900px){.plan{grid-template-columns:1fr}}
+  .day{border:1px solid #ddd;border-radius:8px;background:#fff;padding:6px}
+  .day h3{margin:0 0 6px;font-size:14px}
+  .slots{display:flex;flex-direction:column;gap:6px}
+  .row{display:flex;gap:6px}
+  .slot{flex:1;border:1px solid #ccc;border-radius:6px;background:#f9fafb;padding:4px;font-size:12px}
+  .slot strong{display:block}
 </style>
 </head>
 <body>
-  <header>
-    <h1>Plan zajęć – wybierz kursy i grupy → po prawej tworzy się plan</h1>
-  </header>
-
-  <div class="container">
-    <!-- LEWA STRONA -->
-    <section class="left">
-      <div class="parsebar">
-        <input id="src" type="text" placeholder="Wklej fragment HTML (np. &lt;tr&gt;...&lt;/tr&gt;)" />
-        <button id="parseBtn">Parsuj</button>
-      </div>
-      <div id="status" class="muted">Gotowe do parsowania.</div>
-
-      <!-- Kolapsowalne sekcje -->
-      <details class="block" open>
-        <summary><span class="caret">▶</span><strong>Przedmioty obowiązkowe (O)</strong> <span class="muted" id="countO"></span></summary>
-        <div class="section-body">
-          <div id="col-O" class="grid2"></div>
-        </div>
-      </details>
-
-      <details class="block" open>
-        <summary><span class="caret">▶</span><strong>Zaawansowane do wyboru (M)</strong> <span class="muted" id="countM"></span></summary>
-        <div class="section-body">
-          <div id="col-M" class="grid2"></div>
-        </div>
-      </details>
-
-      <details class="block" open>
-        <summary><span class="caret">▶</span><strong>Pozostałe</strong> <span class="muted" id="countR"></span></summary>
-        <div class="section-body">
-          <div id="col-REST" class="grid2"></div>
-        </div>
-      </details>
-    </section>
-
-    <!-- PRAWA STRONA -->
-    <section class="right">
-      <h2>Plan zajęć</h2>
-      <div id="plan" class="plan"></div>
-    </section>
-  </div>
+<header><h1>Plan zajęć – wybierz kursy</h1></header>
+<div class="container">
+  <aside>
+    <div class="parsebar">
+      <input id="src" type="text" placeholder="Wklej źródło &lt;tr&gt;..." />
+      <button id="parseBtn">Parsuj</button>
+    </div>
+    <input id="search" type="search" class="search" placeholder="Szukaj (nazwa, prowadzący, dzień...)" />
+    <details class="section" open><summary>Obowiązkowe (O)</summary><div id="col-O" class="list"></div></details>
+    <details class="section" open><summary>Zaawansowane (M)</summary><div id="col-M" class="list"></div></details>
+    <details class="section" open><summary>Pozostałe</summary><div id="col-REST" class="list"></div></details>
+  </aside>
+  <main>
+    <h2>Plan</h2>
+    <div id="plan" class="plan"></div>
+  </main>
+</div>
 
 <script>
-/* ---------- Utils ---------- */
-const DAYS_ORDER = ['poniedziałek','wtorek','środa','czwartek','piątek'];
-const PLAN_DAYS = DAYS_ORDER.map(d => d); // można rozszerzyć o sobotę/niedzielę
-const norm = s => (s||'').replace(/\s+/g,' ').replace(/—/g,'-').trim();
+const DAYS = ['poniedziałek','wtorek','środa','czwartek','piątek'];
 
-function htmlToText(node){
-  const d = document.createElement('div'); d.innerHTML = node?.innerHTML || '';
-  d.querySelectorAll('a').forEach(a => a.outerHTML = `${a.textContent}${a.href ? ` (${a.href})` : ''}`);
-  return norm(d.textContent);
-}
-function timeToMinutes(t){
-  // formy: "8.15 - 10.0" / "8:15 - 10:00" / "8.15 — 10.0"
-  if(!t) return null;
-  const s = t.replace(/[—–]/g,'-').replace(/\s+/g,'').replace(/:/g,'.');
-  const m = s.match(/^(\d{1,2}\.\d{1,2}|\d{1,2})-(\d{1,2}\.\d{1,2}|\d{1,2})$/);
-  function toMin(x){
-    const [h,mm] = x.split('.'); const H = +h, M = mm!=null ? +mm : 0;
-    return H*60 + M;
-  }
-  if(m){ return { start: toMin(m[1]), end: toMin(m[2]) }; }
-  return null;
-}
-
-/* ---------- Parsing ---------- */
-function parsePlan(html){
-  const wrapped = /<tr[\s>]/i.test(html) && !/<table[\s>]/i.test(html) ? `<table>${html}</table>` : html;
-  const dom = new DOMParser().parseFromString(wrapped,'text/html');
-  const rows = Array.from(dom.querySelectorAll('tr'));
-
-  const courses=[]; let current=null; let section=null;
-
+const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+function htmlToText(node){const d=document.createElement('div');d.innerHTML=node?.innerHTML||'';return norm(d.textContent);}
+function parse(html){
+  const wrapped=/<tr/i.test(html)&&!/<table/i.test(html)?`<table>${html}</table>`:html;
+  const dom=new DOMParser().parseFromString(wrapped,'text/html');
+  const rows=[...dom.querySelectorAll('tr')];
+  let section=null,current=null;const out=[];
   for(const tr of rows){
-    const isHeader = tr.classList.contains('top');
-    const anchor = tr.querySelector('td[colspan="8"] > a');
-
-    if(isHeader){
-      const label = norm(tr.textContent); if(label) section = label;
-      continue;
-    }
-    if(anchor){
-      current = { name:norm(anchor.textContent), link:anchor.getAttribute('href')||'', sectionLabel:section||'', entries:[] };
-      courses.push(current); continue;
-    }
-    const tds = tr.querySelectorAll('td'); if(!tds.length) continue;
-
-    const group   = norm(tds[0]?.textContent);
-    const type    = norm(tds[1]?.textContent);
-    const teacher = norm(tds[2]?.textContent);
-    const day     = norm(tds[3]?.textContent);
-    const time    = norm(tds[4]?.textContent);
-    const room    = norm(tds[5]?.textContent);
-    const uw1     = tds[6] ? htmlToText(tds[6]) : '';
-    const uw2     = tds[7] ? htmlToText(tds[7]) : '';
-    const empty   = [group,type,teacher,day,time,room,uw1,uw2].every(v=>v===''||v==='.');
-    if(empty) continue;
-    if(!current){ current={name:'Inne', link:'', sectionLabel:section||'', entries:[]}; courses.push(current); }
-    current.entries.push({group,type,teacher,day,time,room,uwagi:[uw1,uw2].filter(Boolean).join(' | ')});
+    if(tr.classList.contains('top')){section=norm(tr.textContent);continue;}
+    const a=tr.querySelector('td[colspan="8"] a');
+    if(a){current={name:norm(a.textContent),link:a.href,section,entries:[]};out.push(current);continue;}
+    const tds=tr.querySelectorAll('td');if(!tds.length)continue;
+    const e={group:norm(tds[0]?.textContent),type:norm(tds[1]?.textContent),teacher:norm(tds[2]?.textContent),
+             day:norm(tds[3]?.textContent),time:norm(tds[4]?.textContent),room:norm(tds[5]?.textContent),
+             uwagi:[tds[6]?htmlToText(tds[6]):'',tds[7]?htmlToText(tds[7]):''].filter(Boolean).join(' | ')};
+    if(Object.values(e).every(v=>!v||v==='.'))continue;
+    if(!current){current={name:'Inne',link:'',section,entries:[]};out.push(current);}
+    current.entries.push(e);
   }
-  return courses;
+  return out;
 }
+function bucketType(t){const v=(t||'').toLowerCase();if(v.startsWith('wyk')||v.startsWith('konw'))return 'wykład';if(v.startsWith('cw'))return 'ćwiczenia';if(v.startsWith('lab'))return 'laboratorium';if(v.startsWith('sem'))return 'seminarium';return 'inne';}
+function sectionCol(s){const L=(s||'').toLowerCase();if(L.includes('(o)')||L.includes('obowiązkowe'))return 'O';if(L.includes('(m)')||L.includes('zaawansowane'))return 'M';return 'REST';}
 
-/* ---------- Kategoryzacja ---------- */
-function sectionToColumn(label){
-  const L = (label||'').toLowerCase();
-  if (/\(o\)/i.test(label) || L.includes('obowiązkowe')) return 'O';
-  if (/\(m\)/i.test(label) || L.includes('zaawansowane')) return 'M';
-  return 'REST';
-}
-function typeBucket(t){
-  const v = (t||'').toLowerCase();
-  if (v.startsWith('wyk')) return 'wykład';
-  if (v.startsWith('konw')) return 'konwersatorium';
-  if (v.startsWith('cw')) return 'ćwiczenia';
-  if (v.startsWith('lab')) return 'laboratorium';
-  if (v.startsWith('sem')) return 'seminarium';
-  return 'inne';
-}
-
-/* ---------- Render: lewa kolumna ---------- */
-const countsEl = { O: document.getElementById('countO'), M: document.getElementById('countM'), REST: document.getElementById('countR') };
-function renderCourseCard(container, course, onSelect){
-  const byBucket = {};
-  for(const e of course.entries){
-    const b = typeBucket(e.type);
-    (byBucket[b] ||= []).push(e);
-  }
-  const el = document.createElement('div');
-  el.className = 'course';
-  const tagText = Object.entries(byBucket).map(([k,v])=>`${k}: ${v.length}`).join(' · ');
-  const courseId = btoa(encodeURIComponent(course.name)).replace(/=/g,'').slice(0,12);
-
-  el.innerHTML = `
-    <h3><span>${course.name}</span></h3>
-    <div class="tags"><span class="chip">${tagText}</span> ${course.link?` · <a href="${course.link}" target="_blank">USOS</a>`:''}</div>
-    ${Object.keys(byBucket).map(bucket=>{
-      const options = byBucket[bucket];
-      const groupName = `${courseId}_${bucket}`;
-      return `
-        <fieldset class="group">
-          <legend>${bucket}</legend>
-          ${options.map((opt,idx)=>{
-            const id = `${groupName}_${idx}`;
-            const labelBits = [opt.teacher, opt.day, opt.time, opt.room && ('s. '+opt.room), opt.group && ('gr. '+opt.group)]
-              .filter(Boolean).join(' · ');
-            const meta = opt.uwagi ? ` <small>(${opt.uwagi})</small>` : '';
-            return `
-              <div class="opt">
-                <input type="radio" name="${groupName}" id="${id}" />
-                <label for="${id}">
-                  <strong>${labelBits}</strong>${meta}
-                </label>
-              </div>
-            `;
-          }).join('')}
-          <div class="opt">
-            <input type="radio" name="${groupName}" id="${groupName}_none" />
-            <label for="${groupName}_none"><em>brak wyboru</em></label>
-          </div>
-        </fieldset>
-      `;
-    }).join('')}
-  `;
-  // zdarzenia wyboru
-  el.querySelectorAll('input[type=radio]').forEach(input=>{
-    input.addEventListener('change', ()=>{
-      const sel = {};
-      el.querySelectorAll('fieldset.group').forEach(fs=>{
-        const legend = fs.querySelector('legend')?.textContent || '';
-        const checked = fs.querySelector('input[type=radio]:checked');
-        if(checked && !checked.id.endsWith('_none')){
-          const label = checked.nextElementSibling?.querySelector('strong')?.textContent || '';
-          // znajdź obiekt entries odpowiadający etykiecie (przybliżenie – dopasowanie po teacher+day+time)
-          const bucket = legend;
-          const list = byBucket[bucket] || [];
-          const found = list.find(e => label.includes(e.teacher) && label.includes(e.day) && label.includes(e.time));
-          if(found) sel[bucket] = found;
-        }
+const selections=new Map();
+function renderCourses(courses){
+  const cols={O:[],M:[],REST:[]};courses.forEach(c=>cols[sectionCol(c.section)].push(c));
+  for(const key of['O','M','REST']){
+    const root=document.getElementById('col-'+key);root.innerHTML='';
+    cols[key].forEach(c=>{
+      const card=document.createElement('div');card.className='course';
+      card.innerHTML=`<header><span>${c.name}</span><button>+</button></header><div class="body"></div>`;
+      const body=card.querySelector('.body');
+      // grupowanie entries wg bucket + group
+      const byBucket={};
+      c.entries.forEach(e=>{
+        const b=bucketType(e.type);
+        if(b==='wykład'){ // scal wszystkie wykłady i konwersatoria razem wg group
+          const g=e.group||'default';(byBucket[b]||(byBucket[b]={}))[g]=[...(byBucket[b]?.[g]||[]),e];
+        }else{(byBucket[b]||(byBucket[b]={}))[e.group||'default']=[...(byBucket[b]?.[e.group||'default']||[]),e];}
       });
-      onSelect(course, sel);
-    });
-  });
-
-  container.appendChild(el);
-}
-
-function renderLeftColumns(courses, onSelect){
-  const buckets = { O:[], M:[], REST:[] };
-  for(const c of courses){ buckets[sectionToColumn(c.sectionLabel)].push(c); }
-  countsEl.O.textContent = `(${buckets.O.length})`;
-  countsEl.M.textContent = `(${buckets.M.length})`;
-  countsEl.REST.textContent = `(${buckets.REST.length})`;
-
-  for(const key of ['O','M','REST']){
-    const root = document.getElementById('col-'+key);
-    root.innerHTML = '';
-    buckets[key].forEach(c => renderCourseCard(root, c, handleSelectionChange));
-  }
-}
-
-/* ---------- Plan (prawa strona) ---------- */
-const planEl = document.getElementById('plan');
-// pamiętamy wybory użytkownika: Map courseName -> { bucket -> entry }
-const selections = new Map();
-
-function handleSelectionChange(course, selectedBuckets){
-  // zaktualizuj zaznaczenia dla kursu
-  const prev = selections.get(course.name) || {};
-  // nadpisz tylko kategorie obecne w selectedBuckets i usuń te, które odznaczono
-  const next = { ...prev };
-  // najpierw usuń wszystko dla kursu
-  for(const k of Object.keys(next)) delete next[k];
-  // i wstaw aktualne wybory
-  for(const [k,v] of Object.entries(selectedBuckets)) next[k] = v;
-  if(Object.keys(next).length === 0) selections.delete(course.name);
-  else selections.set(course.name, next);
-  renderPlan();
-}
-
-function renderPlan(){
-  // Zbuduj listę slotów z selections
-  const items = [];
-  selections.forEach((byBucket, courseName)=>{
-    for(const [bucket, e] of Object.entries(byBucket)){
-      const t = timeToMinutes(e.time) || { start:null, end:null };
-      items.push({
-        course: courseName,
-        bucket,
-        teacher: e.teacher, day: e.day, time: e.time, room: e.room, group: e.group, uwagi: e.uwagi,
-        start: t.start, end: t.end
-      });
-    }
-  });
-
-  // Podziel na dni i posortuj po czasie
-  const byDay = {};
-  PLAN_DAYS.forEach(d => byDay[d] = []);
-  items.forEach(it => {
-    const d = (it.day || '').toLowerCase();
-    const key = PLAN_DAYS.find(x => x.toLowerCase() === d) || PLAN_DAYS[0];
-    byDay[key].push(it);
-  });
-  for(const d of PLAN_DAYS){
-    byDay[d].sort((a,b)=>{
-      if(a.start==null && b.start==null) return 0;
-      if(a.start==null) return 1;
-      if(b.start==null) return -1;
-      return a.start - b.start;
-    });
-  }
-
-  // Render
-  planEl.innerHTML = '';
-  for(const d of PLAN_DAYS){
-    const col = document.createElement('div'); col.className = 'day';
-    col.innerHTML = `<h4>${d[0].toUpperCase()+d.slice(1)}</h4>`;
-    if(byDay[d].length===0){
-      col.innerHTML += `<div class="muted">Brak wybranych zajęć</div>`;
-    } else {
-      byDay[d].forEach((it, idx)=>{
-        const id = `${it.course}__${it.bucket}__${idx}`;
-        const meta = [it.teacher, it.room && ('s. '+it.room), it.group && ('gr. '+it.group)].filter(Boolean).join(' · ');
-        const warn = detectConflicts(it, byDay[d]) ? ' ⚠️' : '';
-        const slot = document.createElement('div'); slot.className='slot';
-        slot.innerHTML = `
-          <div class="head">
-            <strong>${it.time || '—'} – ${it.course}</strong>
-            <span class="muted">${it.bucket}${warn}</span>
-          </div>
-          <div class="meta">${meta}${it.uwagi ? ' · '+it.uwagi : ''}</div>
-          <div style="margin-top:4px"><button data-remove="${id}">Usuń z planu</button></div>
-        `;
-        // "Usuń" po prostu odznacza odpowiednie radio po lewej (szukamy po tekście)
-        slot.querySelector('button')?.addEventListener('click', ()=>{
-          // odszukanie grupy po lewej nie jest trywialne bez id, więc po prostu
-          // usuwamy ten wybór z selections i rerenderujemy
-          const cur = selections.get(it.course) || {};
-          Object.keys(cur).forEach(k=>{
-            if(cur[k]===it) delete cur[k];
-          });
-          // usuń kategorię odpowiadającą it.bucket
-          delete cur[it.bucket];
-          if(Object.keys(cur).length===0) selections.delete(it.course);
-          else selections.set(it.course, cur);
-          renderPlan();
+      Object.entries(byBucket).forEach(([bucket,groups])=>{
+        Object.values(groups).forEach(list=>{
+          const gId=Math.random().toString(36).slice(2,8);
+          const fs=document.createElement('fieldset');fs.className='group';fs.innerHTML=`<legend>${bucket}</legend>`;
+          fs.innerHTML+=list.map((e,i)=>`<div class="opt"><input type="radio" name="${c.name}_${bucket}_${gId}" id="${gId}_${i}"><label for="${gId}_${i}">${[e.teacher,e.day,e.time,e.room&&'s.'+e.room].filter(Boolean).join(' · ')}</label></div>`).join('');
+          fs.innerHTML+=`<div class="opt"><input type="radio" name="${c.name}_${bucket}_${gId}" id="${gId}_none"><label for="${gId}_none"><em>brak</em></label></div>`;
+          fs.querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
+            if(inp.id.endsWith('_none')){if(selections.has(c.name))delete selections.get(c.name)[bucket];renderPlan();return;}
+            selections.set(c.name,selections.get(c.name)||{});
+            selections.get(c.name)[bucket]=list;renderPlan();
+          }));
+          body.appendChild(fs);
         });
-        col.appendChild(slot);
       });
-    }
-    planEl.appendChild(col);
+      const toggle=card.querySelector('header button');
+      toggle.addEventListener('click',()=>{card.classList.toggle('open');toggle.textContent=card.classList.contains('open')?'–':'+'});
+      root.appendChild(card);
+    });
   }
 }
-
-function detectConflicts(item, list){
-  if(item.start==null || item.end==null) return false;
-  return list.some(other=>{
-    if(other===item) return false;
-    if(other.start==null || other.end==null) return false;
-    // nakładanie się przedziałów czasowych
-    return Math.max(item.start, other.start) < Math.min(item.end, other.end);
+function mins(t){if(!t)return null;const m=t.match(/(\d{1,2})[.:](\d{1,2}).*?(\d{1,2})[.:](\d{1,2})/);if(!m)return null;return{start:+m[1]*60+ +m[2],end:+m[3]*60+ +m[4]};}
+function renderPlan(){
+  const plan=document.getElementById('plan');plan.innerHTML='';
+  const daySlots={};DAYS.forEach(d=>daySlots[d]=[]);
+  selections.forEach((byBucket,course)=>{for(const [bucket,list] of Object.entries(byBucket)){list.forEach(e=>{daySlots[e.day.toLowerCase()]?.push({...e,course,bucket});});}});
+  DAYS.forEach(d=>{
+    const div=document.createElement('div');div.className='day';div.innerHTML=`<h3>${d}</h3>`;const rows=document.createElement('div');rows.className='slots';
+    const slots=daySlots[d]||[];slots.sort((a,b)=>{const ma=mins(a.time),mb=mins(b.time);return (ma?.start||0)-(mb?.start||0);});
+    let currentTime=null,row=null;
+    slots.forEach(s=>{const mt=mins(s.time);const key=mt?mt.start:Math.random();
+      if(currentTime!==key){row=document.createElement('div');row.className='row';rows.appendChild(row);currentTime=key;}
+      const el=document.createElement('div');el.className='slot';el.innerHTML=`<strong>${s.course}</strong>${s.time}<br>${s.teacher||''} ${s.room?'<br>s.'+s.room:''}`;
+      row.appendChild(el);
+    });
+    div.appendChild(rows);plan.appendChild(div);
   });
 }
 
-/* ---------- Hooki UI ---------- */
-document.getElementById('parseBtn').onclick = ()=>{
-  try{
-    const html = document.getElementById('src').value || '';
-    const courses = parsePlan(html);
-    renderLeftColumns(courses, handleSelectionChange);
-    document.getElementById('status').textContent = `Parsowanie OK. Kursów: ${courses.length}`;
-    // wyczyść plan
-    selections.clear(); renderPlan();
-  }catch(e){
-    console.error(e);
-    document.getElementById('status').textContent = 'Błąd parsowania.';
-  }
+document.getElementById('parseBtn').onclick=()=>{
+  const html=document.getElementById('src').value;const courses=parse(html);
+  renderCourses(courses);selections.clear();renderPlan();
 };
-
-// Inicjalny „pusty” plan
-renderPlan();
+document.getElementById('search').addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase();
+  document.querySelectorAll('.course').forEach(card=>{
+    const txt=card.textContent.toLowerCase();
+    card.style.display=txt.includes(q)?'block':'none';
+  });
+});
 </script>
 </body>
 </html>
